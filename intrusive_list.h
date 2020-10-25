@@ -1,25 +1,28 @@
 #pragma once
-#include <type_traits>
-#include <iterator>
 #include <iostream>
+#include <iterator>
+#include <type_traits>
 
-namespace  intrusive
-{
+namespace intrusive {
 /*
 The default tag so that users don't need to
 come up with tags if they only use one base
     list_element.
 */
-struct  default_tag ;
+struct default_tag;
 
-template < typename  Tag = default_tag >
-struct  list_element
+template <typename Tag = default_tag>
+struct list_element
 {
     /* Unlinks an item from the list it is in. */
     list_element * next;
     list_element * prev;
 
-    list_element() : next(this), prev(this) { }
+    list_element()
+        : next(this)
+        , prev(this)
+    {
+    }
 
     void link(list_element * prev, list_element * next)
     {
@@ -30,7 +33,7 @@ struct  list_element
         prev->next = this;
     }
 
-    void  unlink ()
+    void unlink()
     {
         this->next->prev = prev;
         this->prev->next = next;
@@ -38,40 +41,42 @@ struct  list_element
         this->prev = this->next = this;
     }
 
-    ~list_element() {
+    ~list_element()
+    {
         unlink();
     };
 };
 
-
-template < typename  T , typename  Tag = default_tag >
-struct  list
+template <typename T, typename Tag = default_tag>
+struct list
 {
 private:
-    template<bool is_const> class Iterator;
+    template <bool is_const>
+    class Iterator;
 
-    static_assert ( std :: is_convertible_v < T &, list_element < Tag > &>,
-                    "value type is not convertible to list_element");
+    static_assert(std ::is_convertible_v<T &, list_element<Tag> &>,
+                  "value type is not convertible to list_element");
 
 public:
     using iterator = Iterator<false>;
     using const_iterator = Iterator<true>;
 
-    list () noexcept
+    list() noexcept
     {
         m_fake_node.next = m_fake_node.prev = &m_fake_node;
     }
-    list ( list  const &) = delete ;
-    list ( list && other) noexcept
+    list(list const &) = delete;
+    list(list && other) noexcept
     {
         m_fake_node.next = m_fake_node.prev = &m_fake_node;
         operator=(std::move(other));
     }
-    ~ list () {
+    ~list()
+    {
     }
 
-    list & operator = ( list  const &) = delete ;
-    list & operator = ( list && other) noexcept
+    list & operator=(list const &) = delete;
+    list & operator=(list && other) noexcept
     {
         if (&other == this) {
             return *this;
@@ -85,46 +90,50 @@ public:
         return *this;
     }
 
-    void clear () noexcept { m_fake_node.next = m_fake_node.prev = &m_fake_node; }
+    void clear() noexcept { m_fake_node.next = m_fake_node.prev = &m_fake_node; }
 
     /*
     Since insertion changes the data in list_element
         we accept non-const T &.
     */
-    void  push_back ( T & element) noexcept
-    { static_cast<list_element<Tag> &>(element).link(m_fake_node.prev, &m_fake_node); }
-    void  pop_back () noexcept { m_fake_node.prev->unlink(); }
+    void push_back(T & element) noexcept
+    {
+        static_cast<list_element<Tag> &>(element).link(m_fake_node.prev, &m_fake_node);
+    }
+    void pop_back() noexcept { m_fake_node.prev->unlink(); }
 
-    T & back () noexcept { return static_cast<T &>(*m_fake_node.prev); }
-    T  const & back () const  noexcept { return static_cast<T const &>(*m_fake_node.prev); }
+    T & back() noexcept { return static_cast<T &>(*m_fake_node.prev); }
+    T const & back() const noexcept { return static_cast<T const &>(*m_fake_node.prev); }
 
-    void  push_front ( T & element) noexcept
-    { static_cast<list_element<Tag> &>(element).link(&m_fake_node, m_fake_node.next); }
-    void  pop_front () noexcept { m_fake_node.next->unlink(); }
+    void push_front(T & element) noexcept
+    {
+        static_cast<list_element<Tag> &>(element).link(&m_fake_node, m_fake_node.next);
+    }
+    void pop_front() noexcept { m_fake_node.next->unlink(); }
 
-    T & front () noexcept { return static_cast<T &>(*m_fake_node.next); }
-    T  const & front () const  noexcept { return static_cast<T const &>(*m_fake_node.next); }
+    T & front() noexcept { return static_cast<T &>(*m_fake_node.next); }
+    T const & front() const noexcept { return static_cast<T const &>(*m_fake_node.next); }
 
-    bool  empty () const  noexcept { return m_fake_node.next == &m_fake_node && m_fake_node.prev == &m_fake_node; }
+    bool empty() const noexcept { return m_fake_node.next == &m_fake_node && m_fake_node.prev == &m_fake_node; }
 
-    iterator  begin () noexcept { return iterator(m_fake_node.next); }
-    const_iterator  begin () const  noexcept { return const_iterator(m_fake_node.next); }
+    iterator begin() noexcept { return iterator(m_fake_node.next); }
+    const_iterator begin() const noexcept { return const_iterator(m_fake_node.next); }
 
-    iterator  end () noexcept { return iterator(&m_fake_node); }
-    const_iterator  end () const  noexcept { return const_iterator(&m_fake_node); }
+    iterator end() noexcept { return iterator(&m_fake_node); }
+    const_iterator end() const noexcept { return const_iterator(&m_fake_node); }
 
-    iterator  insert ( const_iterator pos, T & element) noexcept
+    iterator insert(const_iterator pos, T & element) noexcept
     {
         element.link(pos.m_element->prev, pos.m_element);
         return iterator(&element);
     }
-    iterator  erase ( iterator pos) noexcept
+    iterator erase(iterator pos) noexcept
     {
         pos++;
         pos->prev->unlink();
         return iterator(pos);
     }
-    void  splice ( const_iterator pos, list &, const_iterator begin, const_iterator end) noexcept
+    void splice(const_iterator pos, list &, const_iterator begin, const_iterator end) noexcept
     {
         if (begin == end) {
             return;
@@ -138,18 +147,22 @@ public:
 
         last->next = pos.m_element;
         pos.m_element->prev = last;
-
     }
 
 private:
     template <bool is_const>
-    class Iterator {
+    class Iterator
+    {
         friend struct list<T, Tag>;
 
         template <class C>
         using add_constness = std::conditional_t<is_const, std::add_const_t<C>, std::remove_const_t<C>>;
 
-        Iterator(list_element<Tag> * element) : m_element(element) { }
+        Iterator(list_element<Tag> * element)
+            : m_element(element)
+        {
+        }
+
     public:
         using value_type = add_constness<T>;
         using pointer = add_constness<T> *;
@@ -160,40 +173,43 @@ private:
         Iterator() = default;
 
         // enable if other's constness is not weaker then current
-        template<bool is_other_const, std::enable_if_t<!is_other_const || is_const, int> = 0>
-        Iterator(const Iterator<is_other_const> & other) : m_element(other.m_element) { }
+        template <bool is_other_const, std::enable_if_t<!is_other_const || is_const, int> = 0>
+        Iterator(const Iterator<is_other_const> & other)
+            : m_element(other.m_element)
+        {
+        }
 
         ~Iterator() = default;
 
-        reference operator * () const noexcept { return static_cast<reference>(*m_element); }
-        pointer operator -> () const noexcept { return static_cast<pointer>(m_element); }
+        reference operator*() const noexcept { return static_cast<reference>(*m_element); }
+        pointer operator->() const noexcept { return static_cast<pointer>(m_element); }
 
-        Iterator & operator ++ ()
+        Iterator & operator++()
         {
             m_element = m_element->next;
             return *this;
         }
-        Iterator operator ++ (int)
+        Iterator operator++(int)
         {
             auto res = *this;
             operator++();
             return res;
         }
 
-        Iterator & operator -- ()
+        Iterator & operator--()
         {
             m_element = m_element->prev;
             return *this;
         }
-        Iterator operator -- (int)
+        Iterator operator--(int)
         {
             auto res = *this;
             operator--();
             return res;
         }
 
-        bool operator == (const Iterator & rhs) const noexcept { return m_element == rhs.m_element; }
-        bool operator != (const Iterator & rhs) const noexcept { return m_element != rhs.m_element; }
+        bool operator==(const Iterator & rhs) const noexcept { return m_element == rhs.m_element; }
+        bool operator!=(const Iterator & rhs) const noexcept { return m_element != rhs.m_element; }
 
     private:
         list_element<Tag> * m_element;
@@ -201,4 +217,4 @@ private:
 
     mutable list_element<Tag> m_fake_node;
 };
-}
+} // namespace intrusive
