@@ -1,19 +1,18 @@
 #pragma once
 
+#include "intrusive_list.h"
+
 #include <algorithm>
 #include <functional>
 #include <utility>
 
-#include "intrusive_list.h"
-
-namespace signals
-{
+namespace signals {
 
 template <typename T>
 struct signal;
 
 template <typename... Args>
-struct signal<void (Args...)>
+struct signal<void(Args...)>
 {
     struct connection;
     friend struct connection;
@@ -43,7 +42,6 @@ struct signal<void (Args...)>
 
         const signal * m_sig = nullptr;
         slot_t m_fun = {};
-
     };
 
     using connections_t = intrusive::list<connection, struct connection_tag>;
@@ -56,6 +54,7 @@ struct signal<void (Args...)>
             , it(it)
         {
         }
+
         const signal * sig;
         conn_iterator it;
     };
@@ -64,8 +63,8 @@ struct signal<void (Args...)>
 
     signal() = default;
 
-    signal(signal const&) = delete;
-    signal& operator=(signal const&) = delete;
+    signal(signal const &) = delete;
+    signal & operator=(signal const &) = delete;
 
     ~signal() noexcept;
 
@@ -156,7 +155,6 @@ signal<void(Args...)>::connection::~connection() noexcept
     disconnect();
 }
 
-
 template <typename... Args>
 void signal<void(Args...)>::connection::disconnect() noexcept
 {
@@ -179,11 +177,10 @@ template <typename... Args>
 void signal<void(Args...)>::connection::substitute_in_signal(connection & other) noexcept
 {
     if (m_sig) {
-        m_sig->m_conns.insert(std::find_if(m_sig->m_conns.begin(), m_sig->m_conns.end(),
-                [&other](const auto & conn) { return &conn == &other; }), *this);
+        m_sig->m_conns.insert(std::find_if(m_sig->m_conns.begin(), m_sig->m_conns.end(), [&other](const auto & conn) { return &conn == &other; }), *this);
         other.disconnect();
     }
     other.m_sig = nullptr;
 }
 
-}
+} // namespace signals

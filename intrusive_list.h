@@ -1,9 +1,7 @@
 #pragma once
-
+#include <type_traits>
 #include <iterator>
 #include <iostream>
-#include <type_traits>
-#include <utility>
 
 namespace  intrusive
 {
@@ -52,7 +50,7 @@ struct  list
 private:
     template<bool is_const> class Iterator;
 
-    static_assert ( std::is_convertible< T &, list_element < Tag > &>::value,
+    static_assert ( std :: is_convertible_v < T &, list_element < Tag > &>,
                     "value type is not convertible to list_element");
 
 public:
