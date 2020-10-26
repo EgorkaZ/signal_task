@@ -122,6 +122,8 @@ public:
     iterator end() noexcept { return iterator(&m_fake_node); }
     const_iterator end() const noexcept { return const_iterator(&m_fake_node); }
 
+    iterator as_iterator(T & element) noexcept { return iterator(&element); }
+
     iterator insert(const_iterator pos, T & element) noexcept
     {
         element.link(pos.m_element->prev, pos.m_element);

@@ -49,9 +49,9 @@ struct signal<void(Args...)>
 
     struct iteration_token : intrusive::list_element<struct iteration_token_tag>
     {
-        iteration_token(const signal * sig, conn_iterator it)
+        iteration_token(const signal * sig)
             : sig(sig)
-            , it(it)
+            , it(sig->m_conns.begin())
         {
         }
 
@@ -82,12 +82,10 @@ private:
 template <typename... Args>
 signal<void(Args...)>::~signal() noexcept
 {
-    std::for_each(m_iteration_tokens.begin(), m_iteration_tokens.end(), [this](iteration_token & it_tok) {
-        it_tok.it = m_conns.end();
-    });
-    std::for_each(m_conns.begin(), m_conns.end(), [](connection & conn) {
-        conn.m_sig = nullptr;
-    });
+    for (auto it_conn = m_conns.begin(); it_conn != m_conns.end(); ) {
+        auto it_curr = it_conn++;
+        it_curr->disconnect();
+    }
 }
 
 template <typename... Args>
@@ -99,10 +97,9 @@ typename signal<void(Args...)>::connection signal<void(Args...)>::connect(slot_t
 template <typename... Args>
 void signal<void(Args...)>::operator()(Args... args) const
 {
-    iteration_token itok(this, m_conns.begin());
+    iteration_token itok(this);
     m_iteration_tokens.push_back(itok);
 
-    auto it_toks_end = m_conns.end();
     auto conns_end = m_conns.end();
 
     for (auto & conn_it = itok.it; conn_it != conns_end; ++conn_it) {
@@ -177,7 +174,7 @@ template <typename... Args>
 void signal<void(Args...)>::connection::substitute_in_signal(connection & other) noexcept
 {
     if (m_sig) {
-        m_sig->m_conns.insert(std::find_if(m_sig->m_conns.begin(), m_sig->m_conns.end(), [&other](const auto & conn) { return &conn == &other; }), *this);
+        m_sig->m_conns.insert(m_sig->m_conns.as_iterator(other), *this);
         other.disconnect();
     }
     other.m_sig = nullptr;
